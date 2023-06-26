@@ -36,9 +36,12 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf((csrf) -> csrf.disable())
+                .authorizeHttpRequests()
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/eureka/**").permitAll()
+                .and()
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers(HttpMethod.GET, "/posts/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
 

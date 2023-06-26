@@ -1,36 +1,35 @@
 package com.app.bloggercomment.service.impl;
 
 
-import com.app.bloggercomment.exception.BlogAPIException;
 import com.app.bloggercomment.exception.ResourceNotFoundException;
 import com.app.bloggercomment.model.Comment;
 import com.app.bloggercomment.model.Post;
 import com.app.bloggercomment.model.User;
 import com.app.bloggercomment.payload.CommentDto;
 import com.app.bloggercomment.repository.CommentRepository;
-import com.app.bloggercomment.repository.UserRepository;
 import com.app.bloggercomment.service.CommentService;
+import com.app.bloggercomment.service.PostProxyService;
+import com.app.bloggercomment.service.UserProxyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Date;
 import java.util.List;
 
 @Service
 public class CommentServiceImpl implements CommentService {
+    Logger logger = LoggerFactory.getLogger(CommentServiceImpl.class);
 
-    @Value("${app.blogger.main.url}")
-    private String postServiceUrl;
     private CommentRepository commentRepository;
+
     @Autowired
-    private RestTemplate restTemplate;
+    private PostProxyService postProxyService;
     @Autowired
-    private UserRepository userRepository;
+    private UserProxyService userProxyService;
 
     public CommentServiceImpl(CommentRepository commentRepository) {
         this.commentRepository = commentRepository;
@@ -38,12 +37,14 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Comment createComment(Long postId, Long userId, CommentDto commentDto) {
+        logger.info("creating comment calling post proxy");
         // Calling post service
-        Post postEntity = restTemplate.getForEntity(postServiceUrl + "/posts/" + postId, Post.class).getBody();
+        Post postEntity = postProxyService.getPost(postId);
         if (postEntity == null) throw new ResourceNotFoundException("Post", "id", postId);
+        logger.info("post get success from post proxy");
 
-        // TODO call auth service here for user
-        User user = userRepository.findById(userId).orElseThrow(() -> new BlogAPIException(HttpStatus.NOT_FOUND, "User id not found"));
+        User user = userProxyService.findUser(userId.toString(), "id");
+        if (user == null) throw new ResourceNotFoundException("User", "id", userId);
 
         Comment comment = toEntity(commentDto);
         Post p = new Post();
@@ -79,7 +80,9 @@ public class CommentServiceImpl implements CommentService {
     }
 
     private Comment validateComment(Long postId, Long id) {
-        Post postEntity = restTemplate.getForEntity(postServiceUrl + "/posts/" + postId, Post.class).getBody();
+        logger.info("validating comment calling post proxy");
+        Post postEntity = postProxyService.getPost(postId);
+        logger.info("validating comment post found");
         if (postEntity == null) throw new ResourceNotFoundException("Post", "id", postId);
         return commentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Comment", "id", id));
     }

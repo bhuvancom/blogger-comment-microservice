@@ -4,7 +4,6 @@ package com.app.bloggercomment.controller;
 import com.app.bloggercomment.model.Comment;
 import com.app.bloggercomment.payload.CommentDto;
 import com.app.bloggercomment.service.CommentService;
-import io.swagger.v3.oas.annotations.headers.Header;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +23,7 @@ public class CommentController {
     }
 
     @PostMapping()
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Comment> createComment(@PathVariable Long postId, @RequestHeader(name = "userId") Long userId, @Valid @RequestBody CommentDto commentDto) {
         return new ResponseEntity<>(commentService.createComment(postId, userId, commentDto), HttpStatus.CREATED);
     }
